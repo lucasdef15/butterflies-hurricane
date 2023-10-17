@@ -1,8 +1,11 @@
+import axios from '../../utils/axiosInstance';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { TextField, FormControl, Button, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
+import { useContext } from 'react';
+import { AuthContext } from '../../contexts/authContext';
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -10,6 +13,8 @@ const formSchema = z.object({
 });
 
 export default function Login() {
+  const { setToken } = useContext(AuthContext);
+
   const { control, handleSubmit, formState } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -19,7 +24,15 @@ export default function Login() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+    try {
+      const response = await axios.post('/auth/login', values);
+      axios.defaults.headers.common[
+        'authorization'
+      ] = `Bearer ${response?.data?.accessToken}`;
+      setToken(response?.data?.accessToken);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const isLoading = formState.isSubmitting;

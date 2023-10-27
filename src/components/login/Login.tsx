@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { TextField, FormControl, Button, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { UserContext } from '../../contexts/UserContext';
 import { useContext } from 'react';
-import { AuthContext } from '../../contexts/authContext';
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -13,7 +14,7 @@ const formSchema = z.object({
 });
 
 export default function Login() {
-  const { setToken } = useContext(AuthContext);
+  const { fetchUser } = useContext(UserContext);
 
   const { control, handleSubmit, formState } = useForm({
     resolver: zodResolver(formSchema),
@@ -23,13 +24,18 @@ export default function Login() {
     },
   });
 
+  const navigate = useNavigate();
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      axios.defaults.withCredentials = true;
       const response = await axios.post('/auth/login', values);
+      localStorage.setItem('token', response?.data?.token);
       axios.defaults.headers.common[
         'authorization'
-      ] = `Bearer ${response?.data?.accessToken}`;
-      setToken(response?.data?.accessToken);
+      ] = `Bearer ${response?.data?.token}`;
+      navigate('/posts');
+      await fetchUser();
     } catch (error) {
       console.log(error);
     }
